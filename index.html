@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>코드온 부스 안내</title>
+<link rel="icon" href="assets/logo.png">
+<style>
+  /* 글꼴은 인터넷 없이도 보이도록 assets/fonts 폴더에 넣어 두었습니다. */
+  @font-face { font-family: "Pretendard"; font-weight: 400; font-display: swap; src: url("assets/fonts/Pretendard-Regular.woff2") format("woff2"); }
+  @font-face { font-family: "Pretendard"; font-weight: 600; font-display: swap; src: url("assets/fonts/Pretendard-SemiBold.woff2") format("woff2"); }
+  @font-face { font-family: "Pretendard"; font-weight: 700; font-display: swap; src: url("assets/fonts/Pretendard-Bold.woff2") format("woff2"); }
+  @font-face { font-family: "Jua"; font-weight: 400; font-display: swap; src: url("assets/fonts/Jua-Regular.woff2") format("woff2"); }
+</style>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- 왼쪽: 3D 지도 -->
+  <main class="stage" id="stage">
+    <div class="map" id="map"></div>
+
+    <header class="brand">
+      <img src="assets/logo.png" alt="코드온 로고" width="64" height="64">
+      <div>
+        <h1>코드온 부스 안내</h1>
+        <p id="eventLine"></p>
+      </div>
+    </header>
+
+    <div class="topbar">
+      <div class="seg" role="group" aria-label="1부 2부 전환" id="partSeg"></div>
+      <span class="crowd-flag" id="crowdFlag"></span>
+      <span class="temp-flag" id="tempFlag" hidden>자리 임시 배정</span>
+      <button class="btn ghost" id="adminBtn" type="button">관리자</button>
+      <button class="btn ghost" id="resetBtn" type="button">처음으로</button>
+    </div>
+
+    <div class="tour-bar" id="tourBar" hidden>
+      <span id="tourText"></span>
+      <button class="btn small" id="tourStop" type="button">멈추기</button>
+    </div>
+
+    <section class="route-bar" id="routeBar" hidden aria-live="polite"></section>
+
+    <aside class="detail" id="detail" hidden aria-live="polite"></aside>
+
+    <div class="dock">
+      <div class="views" role="group" aria-label="지도 보기 방식">
+        <button class="btn" data-view="overview" type="button">전체 보기</button>
+        <button class="btn" data-view="top" type="button">위에서 보기</button>
+        <button class="btn" data-view="entrance" type="button">입구에서 보기</button>
+        <button class="btn" data-view="route" type="button" aria-pressed="false">관람 동선</button>
+        <button class="btn" data-view="tour" type="button">부스 투어</button>
+        <button class="btn primary" id="guideBtn" type="button">행사 안내</button>
+      </div>
+      <ul class="legend" id="legend" aria-label="구역 색 안내"></ul>
+    </div>
+
+    <p class="hint" id="hint">끌어서 돌리기 · 휠로 확대 · 책상을 눌러 보세요</p>
+  </main>
+
+  <!-- 오른쪽: 챗봇 -->
+  <section class="chat" id="chat" aria-label="안내 챗봇">
+    <header class="chat-head">
+      <div>
+        <h2>안내 챗봇</h2>
+        <p>인터넷 없이, 직접 학습시킨 신경망이 답해요</p>
+      </div>
+      <button class="btn small" id="explainBtn" type="button" aria-pressed="false">작동 원리</button>
+    </header>
+
+    <div class="messages" id="messages" aria-live="polite"></div>
+
+    <section class="explain" id="explain" hidden aria-label="챗봇 작동 원리"></section>
+
+    <form class="composer" id="composer" autocomplete="off">
+      <label class="sr-only" for="q">챗봇에게 질문하기</label>
+      <input id="q" type="text" placeholder="예: 로봇 축구 어디야?" maxlength="80" enterkeyhint="send">
+      <button class="btn primary" type="submit">보내기</button>
+    </form>
+  </section>
+</div>
+
+<!-- 행사 안내 창 -->
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-back" data-close></div>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <header class="sheet-head">
+      <h2 id="sheetTitle">행사 안내</h2>
+      <button class="btn small" data-close type="button">닫기</button>
+    </header>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <div class="sheet-content" id="sheetContent"></div>
+  </div>
+</div>
+
+<!-- 관리자 로그인 창 -->
+<div class="sheet" id="login" hidden>
+  <div class="sheet-back" data-close></div>
+  <form class="sheet-body login-body" id="loginForm" role="dialog" aria-modal="true" aria-labelledby="loginTitle" autocomplete="off">
+    <header class="sheet-head">
+      <h2 id="loginTitle">관리자 로그인</h2>
+      <button class="btn small" data-close type="button">닫기</button>
+    </header>
+    <div class="sheet-content">
+      <p>자리 배정, 인기도, 방문 인원을 바꾸려면 관리자 비밀번호가 필요해요.</p>
+      <label class="field">비밀번호
+        <input type="password" id="loginPw" autocomplete="off">
+      </label>
+      <p class="editor-msg bad" id="loginMsg" role="alert"></p>
+      <div class="editor-actions"><button class="btn primary" type="submit">로그인</button></div>
+    </div>
+  </form>
+</div>
+
+<!-- 관리자 창 -->
+<div class="sheet" id="editor" hidden>
+  <div class="sheet-back" data-close></div>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+    <header class="sheet-head">
+      <h2 id="editorTitle">관리자</h2>
+      <div class="editor-actions"><button class="btn small" data-act="logout" type="button">로그아웃</button><button class="btn small" data-close type="button">닫기</button></div>
+    </header>
+    <nav class="tabs" id="adminTabs" role="tablist"></nav>
+    <div class="sheet-content" id="editorContent"></div>
+  </div>
+</div>
+
+<!-- 사진 틀 크게 보기 -->
+<div class="lightbox" id="lightbox" hidden>
+  <div class="lightbox-body" role="dialog" aria-modal="true" aria-label="사진 틀 크게 보기">
+    <img id="lightboxImg" src="" alt="">
+    <div class="lightbox-bar">
+      <button class="btn small" data-step="-1" type="button">이전</button>
+      <span id="lightboxName"></span>
+      <button class="btn small" data-step="1" type="button">다음</button>
+      <button class="btn small primary" data-close type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 첫 화면 -->
+<div class="splash" id="splash">
+  <div class="splash-card">
+    <img src="assets/logo.png" alt="" width="168" height="168">
+    <h1>코드온 부스에<br>오신 걸 환영해요</h1>
+    <p id="splashLine"></p>
+    <button class="btn primary big" id="startBtn" type="button">시작하기</button>
+  </div>
+</div>
+
+<noscript>이 화면은 자바스크립트가 켜져 있어야 보입니다.</noscript>
+
+<script src="js/vendor/three.min.js"></script>
+<script src="js/logo-data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/data.js"></script>
+<script src="js/nlp.js"></script>
+<script src="js/model.js"></script>
+<script src="js/chatbot.js"></script>
+<script src="js/map3d.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
